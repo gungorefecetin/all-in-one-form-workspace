@@ -1,5 +1,6 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import fileManagerReducer from '@/app/features/fileManager/fileManagerSlice';
+import formBuilderReducer from '@/app/features/formBuilder/formBuilderSlice';
 
 // Load state from localStorage
 const loadState = () => {
@@ -26,6 +27,7 @@ const saveState = (state: RootState) => {
 
 const rootReducer = combineReducers({
   fileManager: fileManagerReducer,
+  formBuilder: formBuilderReducer,
 });
 
 export const store = configureStore({
