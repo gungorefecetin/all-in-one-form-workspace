@@ -8,10 +8,15 @@ import {
   Archive,
   FileCode2,
   FolderIcon,
+  Folder,
+  FileSpreadsheet,
+  FilePresentation,
+  FileQuestion,
 } from 'lucide-react';
+import clsx from 'clsx';
 
 interface FileIconProps {
-  type: 'file' | 'folder';
+  type: string;
   filename?: string;
   className?: string;
 }
@@ -75,9 +80,13 @@ const getFileType = (filename: string): string => {
   return fileTypes[extension] || 'default';
 };
 
-export function FileIcon({ type, filename = '', className = '' }: FileIconProps) {
+export function FileIcon({ type, filename = '', className }: FileIconProps) {
   if (type === 'folder') {
-    return <FolderIcon className={`text-blue-500 ${className}`} />;
+    return <Folder className={clsx('text-blue-500', className)} />;
+  }
+
+  if (type === 'form') {
+    return <FileQuestion className={clsx('text-purple-500', className)} />;
   }
 
   const fileType = getFileType(filename);
@@ -98,6 +107,12 @@ export function FileIcon({ type, filename = '', className = '' }: FileIconProps)
       return <Archive {...iconProps} className={`text-orange-500 ${className}`} />;
     case 'code':
       return <FileCode2 {...iconProps} className={`text-indigo-500 ${className}`} />;
+    case 'xlsx':
+    case 'csv':
+      return <FileSpreadsheet {...iconProps} className={`text-green-600 ${className}`} />;
+    case 'ppt':
+    case 'pptx':
+      return <FilePresentation {...iconProps} className={`text-orange-500 ${className}`} />;
     default:
       return <DefaultFileIcon {...iconProps} />;
   }

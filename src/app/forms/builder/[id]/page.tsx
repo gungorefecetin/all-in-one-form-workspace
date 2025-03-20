@@ -3,7 +3,8 @@
 import { useState, useEffect, forwardRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/hooks/redux';
-import { updateForm, FormField, FormTemplate } from '@/app/features/formBuilder/formBuilderSlice';
+import { FormField, FormTemplate } from '@/app/features/formBuilder/formBuilderSlice';
+import { updateFile } from '@/app/features/fileManager/fileManagerSlice';
 import { FieldPalette } from '@/app/components/FormBuilder/FieldPalette';
 import { FormField as FormFieldComponent } from '@/app/components/FormBuilder/FormField';
 import { FieldEditor } from '@/app/components/FormBuilder/FieldEditor';
@@ -55,21 +56,27 @@ export default function FormBuilderEditPage({
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const files = useAppSelector((state) => state.fileManager.files);
   const resolvedParams = use(params);
-  const form = useAppSelector((state) => state.formBuilder.forms[resolvedParams.id]);
+  const formId = resolvedParams.id;
+  
+  const formFile = Object.values(files).find(
+    (file) => file.type === 'form' && file.formData?.id === formId
+  );
+
   const [formName, setFormName] = useState('');
   const [fields, setFields] = useState<FormField[]>([]);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
-    if (form) {
-      setFormName(form.name);
-      setFields(form.fields);
+    if (formFile?.formData) {
+      setFormName(formFile.formData.name);
+      setFields(formFile.formData.fields);
     } else {
       router.push('/forms');
     }
-  }, [form, router]);
+  }, [formFile, router]);
 
   const handleDrop = (item: any, monitor: any) => {
     if (monitor.getItemType() === 'NEW_FIELD') {
@@ -96,20 +103,28 @@ export default function FormBuilderEditPage({
   };
 
   const handleSave = () => {
-    if (!formName.trim()) {
+    if (!formName.trim() || !formFile) {
       alert('Please enter a form name');
       return;
     }
 
-    const updatedForm: FormTemplate = {
-      ...form,
+    const updatedFormData = {
+      ...formFile.formData,
       name: formName,
       fields,
       updatedAt: new Date().toISOString(),
     };
 
-    dispatch(updateForm({ id: resolvedParams.id, updates: updatedForm }));
-    router.push('/forms');
+    dispatch(updateFile({
+      id: formFile.id,
+      updates: {
+        name: formName,
+        updatedAt: new Date().toISOString(),
+        formData: updatedFormData,
+      },
+    }));
+
+    router.push('/files');
   };
 
   const handleDeleteField = (id: string) => {
@@ -144,9 +159,17 @@ export default function FormBuilderEditPage({
     }
   };
 
-  if (!form) {
+  if (!formFile || !formId) {
     return null;
   }
+
+  const previewForm: FormTemplate = {
+    id: formId,
+    name: formName || 'Untitled Form',
+    fields: fields || [],
+    createdAt: formFile.formData?.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -162,9 +185,9 @@ export default function FormBuilderEditPage({
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <button
-                onClick={() => router.push('/forms')}
+                onClick={() => router.push('/files')}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-white"
-                title="Back to Forms List"
+                title="Back to Files"
               >
                 <FileText className="w-5 h-5" />
               </button>
@@ -238,17 +261,13 @@ export default function FormBuilderEditPage({
         />
       )}
 
-      <FormPreview
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        form={{
-          id: resolvedParams.id,
-          name: formName,
-          fields: fields,
-          createdAt: form.createdAt,
-          updatedAt: new Date().toISOString(),
-        }}
-      />
+      {isPreviewOpen && (
+        <FormPreview
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          form={previewForm}
+        />
+      )}
     </main>
   );
 } 

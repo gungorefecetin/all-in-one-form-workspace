@@ -14,13 +14,14 @@ import {
   addFile
 } from '@/app/features/fileManager/fileManagerSlice';
 import { Menu, Transition } from '@headlessui/react';
-import { MoreVertical, Pencil, Trash2, Eye, Loader2 } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Eye, Loader2, Copy } from 'lucide-react';
 import { RenameDialog } from './RenameDialog';
 import { FilePreview } from './FilePreview';
 import { FileIcon } from './FileIcon';
 import { SortOption, SortDirection } from './FileManager';
 import { useDragAndDrop } from '@/app/hooks/useDragAndDrop';
 import clsx from 'clsx';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FileListProps {
   searchQuery: string;
@@ -117,6 +118,29 @@ export function FileList({ searchQuery, sortBy, sortDirection, viewMode }: FileL
     dispatch(deleteFile(fileId));
   };
 
+  const handleDuplicate = (file: FileItem) => {
+    if (file.type === 'form' && file.formData) {
+      const newId = uuidv4();
+      const newForm = {
+        ...file.formData,
+        id: newId,
+        name: `${file.formData.name} (Copy)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      dispatch(addFile({
+        id: newId,
+        name: `${file.name} (Copy)`,
+        type: 'form',
+        parentId: file.parentId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        formData: newForm,
+      }));
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault(); // Required for drop to work
     e.stopPropagation();
@@ -168,7 +192,7 @@ export function FileList({ searchQuery, sortBy, sortDirection, viewMode }: FileL
     };
 
     const handleItemClick = (e: React.MouseEvent) => {
-      if (file.type === 'file') {
+      if (file.type === 'file' || file.type === 'form') {
         // Always preview on direct click
         if (!isDragging && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
           setActiveFile(file);
@@ -250,7 +274,7 @@ export function FileList({ searchQuery, sortBy, sortDirection, viewMode }: FileL
               className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10"
               onClick={(e) => e.stopPropagation()}
             >
-              {file.type === 'file' && (
+              {(file.type === 'file' || file.type === 'form') && (
                 <Menu.Item>
                   {({ active }) => (
                     <button
@@ -265,6 +289,24 @@ export function FileList({ searchQuery, sortBy, sortDirection, viewMode }: FileL
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Preview
+                    </button>
+                  )}
+                </Menu.Item>
+              )}
+              {file.type === 'form' && (
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicate(file);
+                      }}
+                      className={`${
+                        active ? 'bg-gray-100' : ''
+                      } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Duplicate
                     </button>
                   )}
                 </Menu.Item>
@@ -361,7 +403,7 @@ export function FileList({ searchQuery, sortBy, sortDirection, viewMode }: FileL
             item={activeFile}
           />
 
-          {activeFile.type === 'file' && (
+          {(activeFile.type === 'file' || activeFile.type === 'form') && (
             <FilePreview
               isOpen={isPreviewing}
               onClose={() => {

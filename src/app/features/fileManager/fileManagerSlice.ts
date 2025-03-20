@@ -1,14 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { FormTemplate } from '@/app/features/formBuilder/formBuilderSlice';
 
 export interface FileItem {
   id: string;
   name: string;
-  type: 'file' | 'folder';
+  type: 'file' | 'folder' | 'form';
   parentId: string | null;
   createdAt: string;
   updatedAt: string;
   size?: number;
   content?: string;
+  formData?: FormTemplate; // For form type items
 }
 
 interface FileManagerState {

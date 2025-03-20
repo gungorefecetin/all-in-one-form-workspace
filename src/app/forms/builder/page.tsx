@@ -3,7 +3,8 @@
 import { useState, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/app/hooks/redux';
-import { addForm, FormField } from '@/app/features/formBuilder/formBuilderSlice';
+import { FormField } from '@/app/features/formBuilder/formBuilderSlice';
+import { addFile } from '@/app/features/fileManager/fileManagerSlice';
 import { FieldPalette } from '@/app/components/FormBuilder/FieldPalette';
 import { FormField as FormFieldComponent } from '@/app/components/FormBuilder/FormField';
 import { FieldEditor } from '@/app/components/FormBuilder/FieldEditor';
@@ -86,16 +87,27 @@ export default function FormBuilderPage() {
       return;
     }
 
+    const formId = uuidv4();
     const newForm = {
-      id: uuidv4(),
+      id: formId,
       name: formName,
       fields,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    dispatch(addForm(newForm));
-    router.push('/forms');
+    // Save only to file system
+    dispatch(addFile({
+      id: formId,
+      name: formName,
+      type: 'form',
+      parentId: null, // Save to root directory
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      formData: newForm,
+    }));
+
+    router.push('/files');
   };
 
   const handleDeleteField = (id: string) => {
