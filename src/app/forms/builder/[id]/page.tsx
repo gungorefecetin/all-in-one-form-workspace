@@ -3,7 +3,7 @@
 import { useState, useEffect, forwardRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/hooks/redux';
-import { FormField, FormTemplate } from '@/app/features/formBuilder/formBuilderSlice';
+import { FormField, FormTemplate, updateForm } from '@/app/features/formBuilder/formBuilderSlice';
 import { updateFile } from '@/app/features/fileManager/fileManagerSlice';
 import { FieldPalette } from '@/app/components/FormBuilder/FieldPalette';
 import { FormField as FormFieldComponent } from '@/app/components/FormBuilder/FormField';
@@ -103,17 +103,23 @@ export default function FormBuilderEditPage({
   };
 
   const handleSave = () => {
-    if (!formName.trim() || !formFile) {
+    if (!formName.trim() || !formFile || !formFile.formData) {
       alert('Please enter a form name');
       return;
     }
 
-    const updatedFormData = {
-      ...formFile.formData,
+    const updatedFormData: FormTemplate = {
+      id: formId,
       name: formName,
       fields,
+      createdAt: formFile.formData.createdAt,
       updatedAt: new Date().toISOString(),
     };
+
+    dispatch(updateForm({
+      id: formId,
+      updates: updatedFormData,
+    }));
 
     dispatch(updateFile({
       id: formFile.id,

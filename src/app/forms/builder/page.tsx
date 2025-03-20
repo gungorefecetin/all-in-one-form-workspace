@@ -3,7 +3,7 @@
 import { useState, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/app/hooks/redux';
-import { FormField } from '@/app/features/formBuilder/formBuilderSlice';
+import { FormField, addForm } from '@/app/features/formBuilder/formBuilderSlice';
 import { addFile } from '@/app/features/fileManager/fileManagerSlice';
 import { FieldPalette } from '@/app/components/FormBuilder/FieldPalette';
 import { FormField as FormFieldComponent } from '@/app/components/FormBuilder/FormField';
@@ -96,7 +96,10 @@ export default function FormBuilderPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    // Save only to file system
+    // Save to form builder state
+    dispatch(addForm(newForm));
+
+    // Save to file system
     dispatch(addFile({
       id: formId,
       name: formName,
