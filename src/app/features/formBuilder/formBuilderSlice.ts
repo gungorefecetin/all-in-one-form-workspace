@@ -28,10 +28,43 @@ interface FormBuilderState {
   isDragging: boolean;
 }
 
-const initialState: FormBuilderState = {
-  forms: {},
-  activeFormId: null,
-  isDragging: false,
+// Load initial state from localStorage
+const loadInitialState = (): FormBuilderState => {
+  if (typeof window === 'undefined') return {
+    forms: {},
+    activeFormId: null,
+    isDragging: false,
+  };
+
+  const storedForms = localStorage.getItem('forms');
+  if (storedForms) {
+    const parsedForms = JSON.parse(storedForms);
+    // Convert array to record if needed
+    const formsRecord: Record<string, FormTemplate> = Array.isArray(parsedForms) 
+      ? parsedForms.reduce((acc, form) => ({ ...acc, [form.id]: form }), {})
+      : parsedForms;
+    
+    return {
+      forms: formsRecord,
+      activeFormId: null,
+      isDragging: false,
+    };
+  }
+
+  return {
+    forms: {},
+    activeFormId: null,
+    isDragging: false,
+  };
+};
+
+const initialState: FormBuilderState = loadInitialState();
+
+// Helper function to save forms to localStorage
+const saveFormsToStorage = (forms: Record<string, FormTemplate>) => {
+  if (typeof window === 'undefined') return;
+  const formsArray = Object.values(forms);
+  localStorage.setItem('forms', JSON.stringify(formsArray));
 };
 
 export const formBuilderSlice = createSlice({
@@ -40,6 +73,7 @@ export const formBuilderSlice = createSlice({
   reducers: {
     addForm: (state, action: PayloadAction<FormTemplate>) => {
       state.forms[action.payload.id] = action.payload;
+      saveFormsToStorage(state.forms);
     },
     updateForm: (state, action: PayloadAction<{ id: string; updates: Partial<FormTemplate> }>) => {
       if (state.forms[action.payload.id]) {
@@ -48,6 +82,7 @@ export const formBuilderSlice = createSlice({
           ...action.payload.updates,
           updatedAt: new Date().toISOString(),
         };
+        saveFormsToStorage(state.forms);
       }
     },
     deleteForm: (state, action: PayloadAction<string>) => {
@@ -55,6 +90,7 @@ export const formBuilderSlice = createSlice({
       if (state.activeFormId === action.payload) {
         state.activeFormId = null;
       }
+      saveFormsToStorage(state.forms);
     },
     setActiveForm: (state, action: PayloadAction<string | null>) => {
       state.activeFormId = action.payload;
@@ -64,6 +100,7 @@ export const formBuilderSlice = createSlice({
       if (form) {
         form.fields.push(action.payload.field);
         form.updatedAt = new Date().toISOString();
+        saveFormsToStorage(state.forms);
       }
     },
     updateField: (state, action: PayloadAction<{ 
@@ -80,6 +117,7 @@ export const formBuilderSlice = createSlice({
             ...action.payload.updates,
           };
           form.updatedAt = new Date().toISOString();
+          saveFormsToStorage(state.forms);
         }
       }
     },
